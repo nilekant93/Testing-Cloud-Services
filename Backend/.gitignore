@@ -1,0 +1,26 @@
+# Pythonin kääntäjätiedostot
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtuaaliympäristö (riippuen nimeämisestä)
+venv/
+env/
+.venv/
+.env/
+
+# SQLite-tietokanta
+instance/*.db
+
+# Flaskin instance-kansio (jos sinne tallennat esim. asetuksia, tietokantaa)
+instance/
+
+# PyCharm / Visual Studio Code -projektikansioiden tiedostot
+.idea/
+.vscode/
+
+# Lokitiedostot
+*.log
+
+# Muut mahdolliset tiedostot
+*.sqlite3

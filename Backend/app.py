@@ -9,6 +9,9 @@ from dotenv import load_dotenv
 load_dotenv()  # lataa .env-tiedoston muuttujat ympäristöön
 import os
 
+ADMIN_USERNAME = os.getenv('ADMIN_USERNAME')
+ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
+
 app = Flask(__name__, instance_relative_config=True)
 CORS(app)
 
@@ -37,13 +40,13 @@ def register():
     class_code = data.get('class_code')
 
     if not username or not password or not class_code:
-        return jsonify({'error': 'Kaikki kentät ovat pakollisia'}), 400
+        return jsonify({'error': 'All fields are required'}), 400
 
     if not username.isalnum() or not class_code.isalnum():
-        return jsonify({'error': 'Vain kirjaimia ja numeroita sallittu'}), 400
+        return jsonify({'error': 'Only letters and numbers are allowed'}), 400
 
     if User.query.filter_by(username=username).first():
-        return jsonify({'error': 'Käyttäjänimi on jo olemassa'}), 409
+        return jsonify({'error': 'username already exists'}), 409
 
     new_user = User(
         username=username,
@@ -52,7 +55,7 @@ def register():
     )
     db.session.add(new_user)
     db.session.commit()
-    return jsonify({'message': 'Käyttäjä luotu onnistuneesti'}), 201
+    return jsonify({'message': 'User created successfully'}), 201
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -78,6 +81,53 @@ def list_users():
             'class_code': user.class_code
         })
     return jsonify(result)
+
+# Admin login endpoint
+
+@app.route('/admin/login', methods=['POST'])
+def admin_login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        token = create_access_token(identity='admin')
+        return jsonify({'token': token}), 200
+    else:
+        return jsonify({'error': 'Invalid credentials'}), 401
+    
+    # käyttäjien haku admin sovellukseen
+@app.route('/admin/users', methods=['GET'])
+def admin_get_users():
+    users = User.query.all()
+    result = []
+
+    for user in users:
+        result.append({
+            'id': user.id,
+            'username': user.username,
+            'class_code': user.class_code,
+            'week1': user.week1done,
+            'week2': user.week2done,
+            'week3': user.week3done,
+            'week4': user.week4done,
+            'week5': user.week5done,
+        })
+
+    return jsonify(result), 200
+
+# käyttäjän poisto tietokannasta
+@app.route('/admin/users/<user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({'message': 'User deleted successfully'}), 200
+
+
 
 # Vain ensimmäisellä kerralla luodaan tietokanta
 

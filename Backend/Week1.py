@@ -10,40 +10,68 @@ ALLOWED_PROVIDERS = [
     "azure"
 ]
 
-def run_test(url: str) -> tuple[bool, str]:
+def run_test(url: str) -> tuple[bool, list[dict]]:
     print(f"Week1.py: Testing URL: {url}")
 
-    if not url.startswith("https://"):
-        message = "URL must start with https://"
-        print(f"Week1.py: Test FAILED – {message}")
-        return False, message
+    checks = []
 
-    if not any(provider in url for provider in ALLOWED_PROVIDERS):
-        message = f"URL must contain a valid hosting provider ({', '.join(ALLOWED_PROVIDERS)})"
-        print(f"Week1.py: Test FAILED – {message}")
-        return False, message
+    # 1. HTTPS Check
+    https_passed = url.startswith("https://")
+    checks.append({
+        "name": "Starts with https://",
+        "passed": https_passed,
+        "message": "URL must start with https://" if not https_passed else "OK"
+    })
 
-    if "cloudservicesexample" not in url:
-        message = "URL must contain 'cloudservicesexample'"
-        print(f"Week1.py: Test FAILED – {message}")
-        return False, message
+    # 2. Provider Check
+    provider_passed = any(provider in url for provider in ALLOWED_PROVIDERS)
+    checks.append({
+        "name": "Valid hosting provider",
+        "passed": provider_passed,
+        "message": (
+            f"URL must contain a valid hosting provider ({', '.join(ALLOWED_PROVIDERS)})"
+            if not provider_passed else "OK"
+        )
+    })
 
-    try:
-        response = requests.get(url, timeout=5)
-        if response.status_code == 200:
-            message = "Test passed – URL is reachable and returned status code 200"
-            print(f"Week1.py: {message}")
-            return True, message
-        else:
-            message = f"URL responded with status code {response.status_code}"
-            print(f"Week1.py: Test FAILED – {message}")
-            return False, message
-    except requests.RequestException as e:
-        message = f"Request failed: {e}"
-        print(f"Week1.py: Test FAILED – {message}")
-        return False, message
+    # 3. Username Check
+    username_passed = "cloudservicesexample" in url
+    checks.append({
+        "name": "Contains username",
+        "passed": username_passed,
+        "message": "URL must contain your username" if not username_passed else "OK"
+    })
 
+    # 4. Reachability Check (run only if https passed)
+    if https_passed:
+        try:
+            response = requests.get(url, timeout=5)
+            reachable_passed = response.status_code == 200
+            checks.append({
+                "name": "URL reachable (status 200)",
+                "passed": reachable_passed,
+                "message": (
+                    f"URL responded with status code {response.status_code}"
+                    if not reachable_passed else "OK"
+                )
+            })
+        except requests.RequestException as e:
+            checks.append({
+                "name": "URL reachable (status 200)",
+                "passed": False,
+                "message": "Failed to reach URL"
+            })
+    else:
+        checks.append({
+            "name": "URL reachable (status 200)",
+            "passed": False,
+            "message": "Not tested due to invalid URL format"
+        })
 
+    # Final result
+    all_passed = all(c["passed"] for c in checks)
+    print("== TEST RESULTS ==")
+    for c in checks:
+        print(f"{'[PASS]' if c['passed'] else '[FAIL]'} {c['name']}: {c['message']}")
 
-
-
+    return all_passed, checks

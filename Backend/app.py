@@ -6,8 +6,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token
 from flask import request, jsonify
 from dotenv import load_dotenv
+from flask_jwt_extended import jwt_required, get_jwt_identity
 load_dotenv()  # lataa .env-tiedoston muuttujat ympäristöön
 import os
+
+import Week1
+import Week3
+
 
 ADMIN_USERNAME = os.getenv('ADMIN_USERNAME')
 ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
@@ -127,6 +132,74 @@ def delete_user(user_id):
     db.session.commit()
     return jsonify({'message': 'User deleted successfully'}), 200
 
+#Lisätään kantaan "tehty" arvo
+@app.route('/mark_week_done', methods=['POST'])
+@jwt_required()
+def mark_week_done():
+    data = request.get_json()
+    week_key = data.get('week')  # esim. "week1done"
+
+    if week_key not in ['week1done', 'week2done', 'week3done', 'week4done', 'week5done']:
+        return jsonify({'error': 'Invalid week key'}), 400
+
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    setattr(user, week_key, True)
+    db.session.commit()
+
+    return jsonify({'message': f'{week_key} marked as done'}), 200
+
+#haetaan kirjautumisen jälkeen tehdyt jo tehdyt testit
+@app.route('/user/progress', methods=['GET'])
+@jwt_required()
+def get_user_progress():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    progress = {
+        'week1Tested': user.week1done,
+        'week2Tested': user.week2done,
+        'week3Tested': user.week3done,
+        'week4Tested': user.week4done,
+        'week5Tested': user.week5done,
+    }
+
+    return jsonify(progress), 200
+
+
+
+# TESTIEN SUORITTAMINEN
+@app.route('/receive', methods=['POST'])
+def receive():
+    data = request.get_json()
+    url = data.get('url')
+    component = data.get('component', 'Unknown')
+
+    print(f"Received URL: {url} (from component: {component})")
+
+    if component == 'Week1':
+        result, checks = Week1.run_test(url)
+        return jsonify({
+            'status': 'success',
+            'test_passed': result,
+            'checks': checks
+        }), 200
+    elif component == 'Week3':
+        result, message = Week3.run_test(url)
+        return jsonify({
+            'status': 'success',
+            'test_passed': result,
+            'message': message
+        }), 200
+    else:
+        return jsonify({'status': 'unknown component'}), 400
 
 
 # Vain ensimmäisellä kerralla luodaan tietokanta

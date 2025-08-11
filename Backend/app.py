@@ -12,6 +12,7 @@ import os
 
 import Week1
 import Week3
+import Week3_1
 
 
 ADMIN_USERNAME = os.getenv('ADMIN_USERNAME')
@@ -176,30 +177,76 @@ def get_user_progress():
 
 
 # TESTIEN SUORITTAMINEN
+# app.py:n /receive-reitti, lisäys Week5:lle
+
 @app.route('/receive', methods=['POST'])
+@jwt_required()
 def receive():
     data = request.get_json()
-    url = data.get('url')
     component = data.get('component', 'Unknown')
+    lesson_key = data.get('lesson')
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
 
-    print(f"Received URL: {url} (from component: {component})")
+    print(f"Received data from user: {user.username}, component: {component}")
 
     if component == 'Week1':
-        result, checks = Week1.run_test(url)
+        url = data.get('url')
+        result, checks = Week1.run_test(url, user.username)
         return jsonify({
             'status': 'success',
             'test_passed': result,
             'checks': checks
         }), 200
+
     elif component == 'Week3':
-        result, message = Week3.run_test(url)
+        url = data.get('url')
+        if lesson_key == 'lesson2':
+            result, message = Week3_1.run_test(url, user.username)
+        else:
+            result, message = Week3.run_test(url, user.username)
         return jsonify({
             'status': 'success',
             'test_passed': result,
-            'message': message
+            'message': message if isinstance(message, str) else '',
+            'checks': message if isinstance(message, list) else []
         }), 200
+
+    elif component == 'Week4':
+        url = data.get('url')
+        import Week4
+        result, checks = Week4.run_test(url, user.username)
+        return jsonify({
+            'status': 'success',
+            'test_passed': result,
+            'checks': checks
+        }), 200
+
+    elif component == 'Week5':
+        site_url = data.get('siteUrl')
+        readme_url = data.get('readmeUrl')
+        if not site_url or not readme_url:
+            return jsonify({'error': 'Both siteUrl and readmeUrl are required for Week5'}), 400
+        
+        import Week5  # varmista, että Week5.py löytyy backendistä
+        result, checks = Week5.run_test(site_url, readme_url, user.username)
+        
+        if result:
+            user.week5done = True
+            db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'test_passed': result,
+            'checks': checks
+        }), 200
+
     else:
         return jsonify({'status': 'unknown component'}), 400
+
+
 
 
 # Vain ensimmäisellä kerralla luodaan tietokanta

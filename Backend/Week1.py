@@ -10,8 +10,8 @@ ALLOWED_PROVIDERS = [
     "azure"
 ]
 
-def run_test(url: str) -> tuple[bool, list[dict]]:
-    print(f"Week1.py: Testing URL: {url}")
+def run_test(url: str, username: str) -> tuple[bool, list[dict]]:
+    print(f"Week1.py: Testing URL: {url} for user: {username}")
 
     checks = []
 
@@ -35,14 +35,14 @@ def run_test(url: str) -> tuple[bool, list[dict]]:
     })
 
     # 3. Username Check
-    username_passed = "cloudservicesexample" in url
+    username_passed = username in url
     checks.append({
         "name": "Contains username",
         "passed": username_passed,
-        "message": "URL must contain your username" if not username_passed else "OK"
+        "message": f"URL must contain your username ({username})" if not username_passed else "OK"
     })
 
-    # 4. Reachability Check (run only if https passed)
+    # 4. Reachability Check (only if https passed)
     if https_passed:
         try:
             response = requests.get(url, timeout=5)
@@ -55,7 +55,7 @@ def run_test(url: str) -> tuple[bool, list[dict]]:
                     if not reachable_passed else "OK"
                 )
             })
-        except requests.RequestException as e:
+        except requests.RequestException:
             checks.append({
                 "name": "URL reachable (status 200)",
                 "passed": False,
@@ -68,7 +68,6 @@ def run_test(url: str) -> tuple[bool, list[dict]]:
             "message": "Not tested due to invalid URL format"
         })
 
-    # Final result
     all_passed = all(c["passed"] for c in checks)
     print("== TEST RESULTS ==")
     for c in checks:

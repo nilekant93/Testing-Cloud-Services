@@ -200,6 +200,23 @@ def receive():
             'test_passed': result,
             'checks': checks
         }), 200
+        
+    elif component == 'Week2':
+        url = data.get('url')
+        import Week2  # varmista että Week2.py on backendin juuressa
+        result, checks = Week2.run_test(url, user.username)
+
+        # jos testi menee läpi, merkitään kantaan tehdyksi
+        if result:
+            user.week2done = True
+            db.session.commit()
+
+        return jsonify({
+            'status': 'success',
+            'test_passed': result,
+            'checks': checks
+        }), 200
+
 
     elif component == 'Week3':
         url = data.get('url')

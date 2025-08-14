@@ -3,11 +3,6 @@ import requests
 ALLOWED_PROVIDERS = [
     "fly.dev",
     "render",
-    "digitalocean",
-    "hetzner",
-    "oracle",
-    "upcloud",
-    "azure"
 ]
 
 def run_test(url: str, username: str) -> tuple[bool, list[dict]]:

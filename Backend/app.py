@@ -7,7 +7,7 @@ from flask_jwt_extended import JWTManager, create_access_token
 from flask import request, jsonify
 from dotenv import load_dotenv
 from flask_jwt_extended import jwt_required, get_jwt_identity
-load_dotenv()  # lataa .env-tiedoston muuttujat ympäristöön
+load_dotenv()  
 import os
 
 import Week1
@@ -21,10 +21,8 @@ ADMIN_PASSWORD = os.getenv('ADMIN_PASSWORD')
 app = Flask(__name__, instance_relative_config=True)
 CORS(app)
 
-# Luo 'instance' -kansio tarvittaessa
 os.makedirs(app.instance_path, exist_ok=True)
 
-# Tietokannan asetukset
 db_path = os.path.join(app.instance_path, 'app.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -138,7 +136,7 @@ def delete_user(user_id):
 @jwt_required()
 def mark_week_done():
     data = request.get_json()
-    week_key = data.get('week')  # esim. "week1done"
+    week_key = data.get('week')  
 
     if week_key not in ['week1done', 'week2done', 'week3done', 'week4done', 'week5done']:
         return jsonify({'error': 'Invalid week key'}), 400
@@ -154,7 +152,7 @@ def mark_week_done():
 
     return jsonify({'message': f'{week_key} marked as done'}), 200
 
-#haetaan kirjautumisen jälkeen tehdyt jo tehdyt testit
+#haetaan kirjautumisen jälkeen jo tehdyt testit
 @app.route('/user/progress', methods=['GET'])
 @jwt_required()
 def get_user_progress():
@@ -177,7 +175,7 @@ def get_user_progress():
 
 
 # TESTIEN SUORITTAMINEN
-# app.py:n /receive-reitti, lisäys Week5:lle
+
 
 @app.route('/receive', methods=['POST'])
 @jwt_required()
@@ -247,7 +245,7 @@ def receive():
         if not site_url or not readme_url:
             return jsonify({'error': 'Both siteUrl and readmeUrl are required for Week5'}), 400
         
-        import Week5  # varmista, että Week5.py löytyy backendistä
+        import Week5 
         result, checks = Week5.run_test(site_url, readme_url, user.username)
         
         if result:
